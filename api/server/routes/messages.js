@@ -9,7 +9,7 @@ const {
   traceIdForMessage,
 } = require('@librechat/api');
 const { findAllArtifacts, replaceArtifactContent } = require('~/server/services/Artifacts/update');
-const { requireJwtAuth, validateMessageReq } = require('~/server/middleware');
+const { requireJwtAuth, validateMessageReq, configMiddleware } = require('~/server/middleware');
 const db = require('~/models');
 
 const router = express.Router();
@@ -108,7 +108,7 @@ router.get('/', async (req, res) => {
  * @param {string} req.body.agentId - The agentId to filter content by
  * @returns {TMessage} The newly created branch message
  */
-router.post('/branch', async (req, res) => {
+router.post('/branch', configMiddleware, async (req, res) => {
   try {
     const { messageId, agentId } = req.body;
     const userId = req.user.id;
@@ -189,7 +189,7 @@ router.post('/branch', async (req, res) => {
   }
 });
 
-router.post('/artifact/:messageId', async (req, res) => {
+router.post('/artifact/:messageId', configMiddleware, async (req, res) => {
   try {
     const { messageId } = req.params;
     const { index, original, updated } = req.body;
@@ -282,7 +282,7 @@ router.get('/:conversationId', validateMessageReq, async (req, res) => {
   }
 });
 
-router.post('/:conversationId', validateMessageReq, async (req, res) => {
+router.post('/:conversationId', validateMessageReq, configMiddleware, async (req, res) => {
   try {
     const message = { ...req.body, conversationId: req.params.conversationId };
     const reqCtx = {

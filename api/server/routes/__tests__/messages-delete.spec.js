@@ -49,6 +49,7 @@ jest.mock('~/server/middleware/requireJwtAuth', () => (req, res, next) => next()
 jest.mock('~/server/middleware', () => ({
   requireJwtAuth: (req, res, next) => next(),
   validateMessageReq: (req, res, next) => next(),
+  configMiddleware: (req, res, next) => next(),
 }));
 
 jest.mock('~/db/models', () => ({
