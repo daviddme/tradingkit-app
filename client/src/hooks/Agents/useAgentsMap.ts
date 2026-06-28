@@ -14,6 +14,10 @@ export default function useAgentsMap({
     {
       select: (res) => mapAgents(res.data),
       enabled: isAuthenticated,
+      // Always refetch on mount so the agent picker / model-spec filter reflects
+      // the current roster. Without this, a stale cache (e.g. from before an
+      // agent was published) hides newly-available agents until cache eviction.
+      refetchOnMount: 'always',
     },
   );
 
