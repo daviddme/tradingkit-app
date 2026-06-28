@@ -5,6 +5,7 @@ const {
 } = require('~/server/services/PluginService');
 
 const PROVISION_BASE = process.env.TRADERDEV_PROVISION_URL || 'https://mcp-api.trader.dev';
+const ADMIN_EMAIL = 'hi@davidd.tech';
 
 // MCP server name in librechat.yaml is `trader-dev`; LibreChat namespaces its
 // per-user credentials as `mcp_<serverName>` with one authField per customUserVar.
@@ -50,6 +51,14 @@ async function ensureTraderDevKey(userId, email, displayName) {
   const existing = await getUserPluginAuthValue(userId, MCP_AUTH_FIELD, false, MCP_PLUGIN_KEY);
   if (existing) {
     return { provisioned: true, reason: 'already_stored' };
+  }
+
+  // The owner account uses the unlimited shared admin key directly (no free-tier
+  // Trader.dev account), so admin backtests/alerts are never metered.
+  if (email === ADMIN_EMAIL) {
+    await updateUserPluginAuth(userId, MCP_AUTH_FIELD, MCP_PLUGIN_KEY, adminKey());
+    logger.info('[traderdev] stored unlimited admin key for owner account');
+    return { provisioned: true, reason: 'admin_key' };
   }
 
   let { status, data } = await callProvision(email, displayName, false);
