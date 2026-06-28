@@ -7,6 +7,7 @@ import type { ChatFormValues } from '~/common';
 import { ChatContext, ChatFormProvider, ActivePanelProvider } from '~/Providers';
 import useUnifiedSidebarLinks from '~/hooks/Nav/useUnifiedSidebarLinks';
 import { useChatHelpers, useLocalize } from '~/hooks';
+import AlertsSidebarController from '~/components/Alerts/AlertsSidebarController';
 import SidePanelNav from '~/components/SidePanel/Nav';
 import ExpandedPanel from './ExpandedPanel';
 import Sidebar from './Sidebar';
@@ -148,6 +149,7 @@ function UnifiedSidebar() {
         >
           <SidebarChatProvider>
             <ActivePanelProvider>
+              <AlertsSidebarController />
               <ExpandedPanel links={links} onCollapse={handleCollapse} />
               <nav className="min-h-0 flex-1 overflow-hidden bg-surface-primary-alt">
                 <SidePanelNav links={links} />
@@ -177,6 +179,7 @@ function UnifiedSidebar() {
   return (
     <SidebarChatProvider>
       <ActivePanelProvider>
+        <AlertsSidebarController />
         <aside
           className="relative flex h-full flex-shrink-0 overflow-hidden"
           style={{

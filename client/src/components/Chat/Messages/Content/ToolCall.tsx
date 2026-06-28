@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { useSetAtom } from 'jotai';
 import { useRecoilValue } from 'recoil';
 import { Button } from '@librechat/client';
 import { TriangleAlert } from 'lucide-react';
@@ -15,8 +16,11 @@ import { useMCPIconMap } from '~/hooks/MCP';
 import { AttachmentGroup } from './Parts';
 import ToolCallInfo from './ToolCallInfo';
 import ProgressText from './ProgressText';
+import { alertsSignalAtom } from '~/store/alertsPanel';
 import { logger } from '~/utils';
 import store from '~/store';
+
+const ALERT_MUTATIONS = ['create_alert', 'update_alert', 'pause_alert', 'resume_alert', 'delete_alert'];
 
 export default function ToolCall({
   initialProgress = 0.1,
@@ -104,6 +108,19 @@ export default function ToolCall({
       mcpServerName: '',
     };
   }, [name, parsedAuthUrl]);
+
+  // TradingKit: when an alert mutation tool finishes, open + refresh the My
+  // Alerts sidebar so the change shows immediately.
+  const bumpAlerts = useSetAtom(alertsSignalAtom);
+  const alertFiredRef = useRef(false);
+  const isAlertMutation =
+    isMCPToolCall && mcpServerName === 'trader-dev' && ALERT_MUTATIONS.includes(function_name);
+  useEffect(() => {
+    if (isAlertMutation && hasOutput && !alertFiredRef.current) {
+      alertFiredRef.current = true;
+      bumpAlerts((s) => ({ open: s.open + 1, refresh: s.refresh + 1 }));
+    }
+  }, [isAlertMutation, hasOutput, bumpAlerts]);
 
   const toolIconType = useMemo(() => getToolIconType(name), [name]);
   const mcpIconMap = useMCPIconMap();

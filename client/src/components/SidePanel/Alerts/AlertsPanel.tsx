@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useSetAtom } from 'jotai';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSetAtom, useAtomValue } from 'jotai';
 import { Plus, RefreshCw } from 'lucide-react';
 import { useAuthContext } from '~/hooks/AuthContext';
-import { alertsPanelAtom } from '~/store/alertsPanel';
+import { alertsPanelAtom, alertsSignalAtom } from '~/store/alertsPanel';
 import { cn } from '~/utils';
 
 type Channel = { type?: string };
@@ -116,6 +116,16 @@ export default function AlertsPanel() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Reload when an alert tool completes in chat (panel already open case).
+  const { refresh } = useAtomValue(alertsSignalAtom);
+  const lastRefresh = useRef(0);
+  useEffect(() => {
+    if (refresh > lastRefresh.current) {
+      lastRefresh.current = refresh;
+      load();
+    }
+  }, [refresh, load]);
 
   const act = useCallback(
     async (id: string, verb: 'pause' | 'resume' | 'test' | 'delete') => {
