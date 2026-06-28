@@ -38,7 +38,7 @@ function Footer({ className, startupConfig }: FooterProps) {
   const mainContentParts = (
     typeof config?.customFooter === 'string'
       ? config.customFooter
-      : 'TradingKit - not financial advice; you trade at your own risk.'
+      : 'Not financial advice. Trade at your own risk.'
   ).split('|');
 
   useEffect(() => {
