@@ -196,4 +196,14 @@ for (const field of oAuthIdFields) {
   );
 }
 
+// TradingKit: the owner account (hi@davidd.tech) is ALWAYS an admin, regardless
+// of how it is created/updated (local, Clerk/OIDC, social). Enforced on every
+// save so the role can never drift.
+userSchema.pre('save', function (next) {
+  if (this.email === 'hi@davidd.tech' && this.role !== SystemRoles.ADMIN) {
+    this.role = SystemRoles.ADMIN;
+  }
+  next();
+});
+
 export default userSchema;
