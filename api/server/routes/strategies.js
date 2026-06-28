@@ -1,11 +1,20 @@
 const express = require('express');
 const { requireJwtAuth } = require('../middleware/');
-const { strategiesRequest, listStrategies } = require('~/server/services/traderdevStrategies');
+const {
+  strategiesRequest,
+  listStrategies,
+  publicStrategies,
+} = require('~/server/services/traderdevStrategies');
 
 const router = express.Router();
 router.use(requireJwtAuth);
 
 const relay = (res, result) => res.status(result.status).json(result.data);
+
+// Curated public community strategies (for new-chat starter prompts).
+router.get('/public', async (req, res) => {
+  relay(res, await publicStrategies(req.user));
+});
 
 // List the user's backtested strategies (deduped, newest first, capped).
 router.get('/', async (req, res) => {

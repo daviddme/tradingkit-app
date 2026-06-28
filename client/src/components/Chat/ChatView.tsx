@@ -15,6 +15,7 @@ import {
 } from '~/hooks';
 import { ChatContext, AddedChatContext, ChatFormProvider, useFileMapContext } from '~/Providers';
 import ConversationStarters from './Input/ConversationStarters';
+import StrategyStarters from './StrategyStarters';
 import AgentBubbles from './AgentBubbles';
 import { useGetMessagesByConvoId } from '~/data-provider';
 import ProjectLandingChip from './ProjectLandingChip';
@@ -120,6 +121,7 @@ function ChatView({ index = 0, project }: { index?: number; project?: TChatProje
                     )}
                   >
                     {isProjectLandingPage && project && <ProjectLandingChip project={project} />}
+                    {isLandingPage && <StrategyStarters />}
                     {isLandingPage && <ConversationStarters />}
                     <ChatForm index={index} placeholder={chatFormPlaceholder} />
                     {isLandingPage && <AgentBubbles />}
