@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { MCPIcon, AttachmentIcon, OpenAIMinimalIcon } from '@librechat/client';
 import {
   Bot,
+  Bell,
   Brain,
   Bookmark,
   NotebookPen,
@@ -32,6 +33,7 @@ import PanelSwitch from '~/components/SidePanel/Builder/PanelSwitch';
 import Parameters from '~/components/SidePanel/Parameters/Panel';
 import { MemoryPanel } from '~/components/SidePanel/Memories';
 import FilesPanel from '~/components/SidePanel/Files/Panel';
+import AlertsPanel from '~/components/SidePanel/Alerts/AlertsPanel';
 import { PromptsAccordion } from '~/components/Prompts';
 import { SkillsAccordion } from '~/components/Skills';
 
@@ -176,6 +178,15 @@ export default function useSideNavLinks({
       icon: AttachmentIcon,
       id: 'files',
       Component: FilesPanel,
+    });
+
+    // TradingKit: live alerts management panel (available to all users).
+    links.push({
+      title: 'com_ui_alerts',
+      label: '',
+      icon: Bell,
+      id: 'alerts',
+      Component: AlertsPanel,
     });
 
     if (

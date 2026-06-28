@@ -1354,6 +1354,7 @@
   "com_ui_name": "Name",
   "com_ui_name_sort": "Sort by Name",
   "com_ui_navigate_results": "Navigate results",
+  "com_ui_alerts": "Alerts",
   "com_ui_new": "New",
   "com_ui_new_chat": "New chat",
   "com_ui_new_chat_in_project": "New chat in {{name}}",

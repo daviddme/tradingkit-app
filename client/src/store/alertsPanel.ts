@@ -1,11 +1,10 @@
 import { atom } from 'jotai';
 
 /**
- * Drives the "My Alerts" left-edge panel. `pendingPrompt` is a one-shot hand-off
- * to the in-chat bridge: when the panel's "New alert" button sets it, the bridge
- * (mounted inside the chat context) submits it via `ask()` and clears it.
+ * One-shot hand-off from the My Alerts panel to the in-chat bridge: when the
+ * panel's "New alert" button sets `pendingPrompt`, the bridge (mounted inside
+ * the main chat context) submits it via `ask()` and clears it.
  */
-export const alertsPanelAtom = atom<{ open: boolean; pendingPrompt: string | null }>({
-  open: false,
+export const alertsPanelAtom = atom<{ pendingPrompt: string | null }>({
   pendingPrompt: null,
 });
