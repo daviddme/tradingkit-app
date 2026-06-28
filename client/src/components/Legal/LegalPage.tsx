@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
+import TradingKitIcon from '~/components/svg/TradingKitIcon';
 
 const UPDATED = 'June 28, 2026';
 
@@ -15,7 +16,7 @@ function LegalShell({ title, children }: { title: string; children: ReactNode })
           <ArrowLeft className="h-4 w-4" /> Back to TradingKit
         </Link>
         <div className="mb-6 flex items-center gap-2">
-          <img src="/assets/logo.svg" alt="TradingKit" className="h-7 w-7" />
+          <TradingKitIcon className="h-7 w-7 text-text-primary" />
           <span className="text-lg font-semibold">TradingKit</span>
         </div>
         <h1 className="mb-1 text-2xl font-bold">{title}</h1>
