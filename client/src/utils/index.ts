@@ -1,6 +1,8 @@
 import React from 'react';
+import { getDefaultStore } from 'jotai';
 import type { UIActionResult } from '@mcp-ui/client';
 import { TAskFunction } from '~/common';
+import { strategyWindowAtom } from '~/store/strategyWindow';
 import logger from './logger';
 
 export * from './map';
@@ -127,6 +129,24 @@ export const handleUIAction = async (result: UIActionResult, ask: TAskFunction) 
   const supportedTypes = ['intent', 'tool', 'prompt'];
 
   const { type, payload } = result;
+
+  // TradingKit: a `strategy-window` intent opens the docked bottom report panel
+  // (the Trader.dev report page in an iframe) instead of messaging the agent.
+  if (type === 'intent') {
+    const p = payload as unknown as { intent?: string; params?: { url?: string; title?: string } };
+    if (p?.intent === 'strategy-window') {
+      try {
+        getDefaultStore().set(strategyWindowAtom, {
+          open: true,
+          url: p.params?.url ?? null,
+          title: p.params?.title ?? 'Strategy Window',
+        });
+      } catch (e) {
+        logger.error('[StrategyWindow] failed to open dock', e);
+      }
+      return;
+    }
+  }
 
   if (!supportedTypes.includes(type)) {
     return;
