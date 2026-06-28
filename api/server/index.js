@@ -241,6 +241,7 @@ const startServer = async () => {
   /* API Endpoints */
   app.use('/api/auth', preAuthTenantMiddleware, routes.auth);
   app.use('/api/clerk', preAuthTenantMiddleware, routes.clerk);
+  app.use('/api/tk-alerts', routes.alerts);
   app.use('/api/admin', routes.adminAuth);
   app.use('/api/admin/config', routes.adminConfig);
   app.use('/api/admin/grants', routes.adminGrants);
