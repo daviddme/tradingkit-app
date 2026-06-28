@@ -15,6 +15,7 @@ const {
   primaryEmail,
 } = require('~/server/services/Clerk/clerkClient');
 const { planFromClaim, resolveCreditsForPlan } = require('~/server/services/Clerk/planCredits');
+const { ensureTraderDevKey } = require('~/server/services/Clerk/traderdevProvision');
 
 const ADMIN_EMAIL = 'hi@davidd.tech';
 
@@ -142,6 +143,14 @@ async function clerkAuthController(req, res) {
       } catch (err) {
         logger.error('[clerk] failed to sync plan credits:', err);
       }
+    }
+
+    // Auto-provision a personal Trader.dev account + MCP key so the user's
+    // backtests run as themselves (best-effort; never blocks login).
+    try {
+      await ensureTraderDevKey(userId, email, name);
+    } catch (err) {
+      logger.error('[clerk] Trader.dev provisioning failed:', err);
     }
 
     const lcToken = await setAuthTokens(userId, res, null, req);
