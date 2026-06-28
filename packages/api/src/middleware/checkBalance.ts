@@ -154,6 +154,13 @@ export async function checkBalance(
   { req, res, txData }: { req: ServerRequest; res: Response; txData: TxData },
   deps: CheckBalanceDeps,
 ): Promise<boolean> {
+  // TradingKit: admins (and the owner hi@davidd.tech) are exempt from credit
+  // metering - they always have unlimited credits.
+  const tkUser = req.user as { role?: string; email?: string } | undefined;
+  if (tkUser?.role === 'ADMIN' || tkUser?.email === 'hi@davidd.tech') {
+    return true;
+  }
+
   const { canSpend, balance, tokenCost } = await checkBalanceRecord(txData, deps);
   if (canSpend) {
     return true;
