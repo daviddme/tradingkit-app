@@ -113,30 +113,37 @@ export default function ToolCall({
 
   // TradingKit: when an alert mutation tool finishes, open + refresh the My
   // Alerts sidebar so the change shows immediately.
+  // TradingKit: react to trader-dev alert/backtest tools completing in chat.
+  // Alerts open + refresh the My Alerts panel; backtests refresh My Strategies.
+  // CRITICAL: only react to a LIVE completion (output just arrived, or the
+  // response is still generating) — never to a historical tool call that mounts
+  // already-completed when an OLD conversation is opened (that was opening the
+  // alerts panel on every chat switch).
   const bumpAlerts = useSetAtom(alertsSignalAtom);
+  const bumpStrategies = useSetAtom(strategiesSignalAtom);
   const alertFiredRef = useRef(false);
+  const backtestFiredRef = useRef(false);
+  const prevOutputRef = useRef(hasOutput);
   const isAlertMutation =
     isMCPToolCall && mcpServerName === 'trader-dev' && ALERT_MUTATIONS.includes(function_name);
+  const isBacktest =
+    isMCPToolCall && mcpServerName === 'trader-dev' && BACKTEST_TOOLS.includes(function_name);
   useEffect(() => {
+    const justCompleted = hasOutput && !prevOutputRef.current;
+    prevOutputRef.current = hasOutput;
+    const live = justCompleted || isSubmitting;
+    if (!live) {
+      return;
+    }
     if (isAlertMutation && hasOutput && !alertFiredRef.current) {
       alertFiredRef.current = true;
       bumpAlerts((s) => ({ open: s.open + 1, refresh: s.refresh + 1 }));
     }
-  }, [isAlertMutation, hasOutput, bumpAlerts]);
-
-  // TradingKit: when a backtest finishes, refresh the My Strategies panel (the
-  // new strategy is recorded upstream). Refresh only — don't force the panel
-  // open, since backtests happen often and the user is watching the result card.
-  const bumpStrategies = useSetAtom(strategiesSignalAtom);
-  const backtestFiredRef = useRef(false);
-  const isBacktest =
-    isMCPToolCall && mcpServerName === 'trader-dev' && BACKTEST_TOOLS.includes(function_name);
-  useEffect(() => {
     if (isBacktest && hasOutput && !backtestFiredRef.current) {
       backtestFiredRef.current = true;
       bumpStrategies((s) => ({ refresh: s.refresh + 1 }));
     }
-  }, [isBacktest, hasOutput, bumpStrategies]);
+  }, [isAlertMutation, isBacktest, hasOutput, isSubmitting, bumpAlerts, bumpStrategies]);
 
   const toolIconType = useMemo(() => getToolIconType(name), [name]);
   const mcpIconMap = useMCPIconMap();
