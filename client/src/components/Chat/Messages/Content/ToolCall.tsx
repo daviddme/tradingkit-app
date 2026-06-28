@@ -18,6 +18,7 @@ import ToolCallInfo from './ToolCallInfo';
 import ProgressText from './ProgressText';
 import { alertsSignalAtom } from '~/store/alertsPanel';
 import { strategiesSignalAtom } from '~/store/strategiesPanel';
+import { parseBacktestCapture, saveCapture } from '~/utils/backtestCapture';
 import { logger } from '~/utils';
 import store from '~/store';
 
@@ -49,6 +50,8 @@ export default function ToolCall({
 }) {
   const localize = useLocalize();
   const autoExpand = useRecoilValue(store.autoExpandTools);
+  const captureUserId = useRecoilValue(store.user)?.id ?? '';
+  const captureConvId = useRecoilValue(store.conversationByIndex(0))?.conversationId ?? null;
   const hasOutput = (output?.length ?? 0) > 0;
   const [showInfo, setShowInfo] = useState(() => autoExpand && hasOutput);
   const { style: expandStyle, ref: expandRef } = useExpandCollapse(showInfo);
@@ -142,8 +145,29 @@ export default function ToolCall({
     if (isBacktest && hasOutput && !backtestFiredRef.current) {
       backtestFiredRef.current = true;
       bumpStrategies((s) => ({ refresh: s.refresh + 1 }));
+      try {
+        const inputStr =
+          typeof _args === 'string' ? _args : JSON.stringify(_args ?? {});
+        const rec = parseBacktestCapture(inputStr, output ?? '', captureConvId);
+        if (rec) {
+          saveCapture(captureUserId, rec);
+        }
+      } catch (e) {
+        logger.warn('ToolCall', 'failed to capture backtest', e);
+      }
     }
-  }, [isAlertMutation, isBacktest, hasOutput, isSubmitting, bumpAlerts, bumpStrategies]);
+  }, [
+    isAlertMutation,
+    isBacktest,
+    hasOutput,
+    isSubmitting,
+    bumpAlerts,
+    bumpStrategies,
+    _args,
+    output,
+    captureConvId,
+    captureUserId,
+  ]);
 
   const toolIconType = useMemo(() => getToolIconType(name), [name]);
   const mcpIconMap = useMCPIconMap();

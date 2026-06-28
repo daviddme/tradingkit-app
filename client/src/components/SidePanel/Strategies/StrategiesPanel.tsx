@@ -1,9 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSetAtom, useAtomValue } from 'jotai';
-import { Play, Trash2, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Play, Trash2, RefreshCw, MessageSquare } from 'lucide-react';
 import { useAuthContext } from '~/hooks/AuthContext';
 import { pendingChatPromptAtom } from '~/store/chatPrompt';
 import { strategiesSignalAtom } from '~/store/strategiesPanel';
+import {
+  getCaptures,
+  removeCaptureByStrategyId,
+  type BacktestCapture,
+} from '~/utils/backtestCapture';
+import EquitySparkline from './EquitySparkline';
 import { cn } from '~/utils';
 
 type Strategy = {
@@ -15,11 +22,20 @@ type Strategy = {
   mode?: string;
 };
 
-function retestPrompt(s: Strategy): string {
-  return `Re-run a fresh backtest on my saved strategy "${s.name}" (${s.symbol} ${s.timeframe}), strategy id ${s.id}, on the latest market data, and show the results.`;
+type Row = {
+  id: string;
+  name: string;
+  symbol: string;
+  timeframe: string;
+  createdAt: string | null;
+  capture?: BacktestCapture;
+};
+
+function retestPrompt(r: Row): string {
+  return `Re-run a fresh backtest on my saved strategy "${r.name}" (${r.symbol} ${r.timeframe}), strategy id ${r.id}, on the latest market data, and show the results.`;
 }
 
-function relativeTime(ms: string | null): string {
+function relativeTime(ms: string | number | null): string {
   if (!ms) {
     return '';
   }
@@ -42,11 +58,18 @@ function relativeTime(ms: string | null): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function pct(v: number | null, digits = 1): string {
+  return v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(digits)}%`;
+}
+
 export default function StrategiesPanel() {
-  const { token } = useAuthContext();
+  const { token, user } = useAuthContext();
+  const userId = user?.id ?? '';
   const setChatPrompt = useSetAtom(pendingChatPromptAtom);
+  const navigate = useNavigate();
 
   const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [captures, setCaptures] = useState<BacktestCapture[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -74,6 +97,7 @@ export default function StrategiesPanel() {
     setLoading(true);
     setError(null);
     setPending(false);
+    setCaptures(getCaptures(userId));
     try {
       const list = await api('GET', '/');
       if (list.status === 409) {
@@ -88,13 +112,13 @@ export default function StrategiesPanel() {
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, [api, userId]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // Reload when a backtest completes in chat (a new strategy was recorded).
+  // Reload when a backtest completes in chat (a new capture was recorded).
   const { refresh } = useAtomValue(strategiesSignalAtom);
   const lastRefresh = useRef(0);
   useEffect(() => {
@@ -106,6 +130,25 @@ export default function StrategiesPanel() {
     }
   }, [refresh, load]);
 
+  // Merge: enrich base strategies with captures by id; prepend captures whose
+  // strategy isn't in the (possibly admin-polluted / deduped) base list.
+  const rows = useMemo<Row[]>(() => {
+    const capById = new Map(captures.map((c) => [c.strategyId, c]));
+    const baseIds = new Set(strategies.map((s) => s.id));
+    const orphans: Row[] = captures
+      .filter((c) => !baseIds.has(c.strategyId))
+      .map((c) => ({
+        id: c.strategyId,
+        name: c.name,
+        symbol: c.symbol,
+        timeframe: c.timeframe,
+        createdAt: String(c.capturedAt),
+        capture: c,
+      }));
+    const base: Row[] = strategies.map((s) => ({ ...s, capture: capById.get(s.id) }));
+    return [...orphans, ...base];
+  }, [strategies, captures]);
+
   const remove = useCallback(
     async (id: string, name: string) => {
       if (!window.confirm(`Delete strategy "${name}"? This cannot be undone.`)) {
@@ -114,12 +157,13 @@ export default function StrategiesPanel() {
       setBusyId(id);
       try {
         await api('DELETE', `/${id}`);
+        removeCaptureByStrategyId(userId, id);
         await load();
       } finally {
         setBusyId(null);
       }
     },
-    [api, load],
+    [api, load, userId],
   );
 
   return (
@@ -146,45 +190,75 @@ export default function StrategiesPanel() {
           Your Trader.dev account is still being set up. Refresh in a moment.
         </div>
       )}
-      {!loading && !error && !pending && strategies.length === 0 && (
+      {!loading && !error && !pending && rows.length === 0 && (
         <div className="px-1 py-2 text-sm text-text-secondary">
           No strategies yet. Run a backtest in chat and it shows up here.
         </div>
       )}
 
       {!loading &&
-        strategies.map((s) => {
-          const busy = busyId === s.id;
-          const when = relativeTime(s.createdAt);
+        rows.map((r) => {
+          const busy = busyId === r.id;
+          const c = r.capture;
+          const up = (c?.returnPct ?? 0) >= 0;
           return (
             <div
-              key={s.id}
+              key={r.id}
               className="rounded-lg border border-border-light bg-surface-secondary p-3"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-text-primary" title={s.name}>
-                    {s.name || 'Untitled strategy'}
+              {c && (
+                <>
+                  <div className="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-xs">
+                    <span className={cn('font-semibold', up ? 'text-green-500' : 'text-red-500')}>
+                      {pct(c.returnPct)}
+                    </span>
+                    <span className="text-text-secondary">DD {pct(c.maxDrawdownPct)?.replace('+', '')}</span>
+                    <span className="text-text-secondary">
+                      Win {c.winRatePct == null ? '—' : `${Math.round(c.winRatePct)}%`}
+                    </span>
+                    <span className="text-text-secondary">
+                      {c.totalTrades == null ? '' : `${c.totalTrades} trades`}
+                    </span>
                   </div>
-                  <div className="text-xs text-text-secondary">
-                    {s.symbol} · {s.timeframe}
-                    {when ? ` · ${when}` : ''}
-                  </div>
-                </div>
+                  {c.r2Url && (
+                    <div className="mb-2 overflow-hidden rounded border border-border-light bg-surface-primary">
+                      <EquitySparkline url={c.r2Url} up={up} />
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div className="truncate text-sm font-medium text-text-primary" title={r.name}>
+                {r.name || 'Untitled strategy'}
+              </div>
+              <div className="text-xs text-text-secondary">
+                {r.symbol} · {r.timeframe}
+                {relativeTime(r.createdAt) ? ` · ${relativeTime(r.createdAt)}` : ''}
               </div>
 
               <div className="mt-2.5 flex gap-1.5">
                 <button
                   disabled={busy}
-                  onClick={() => setChatPrompt(retestPrompt(s))}
+                  onClick={() => setChatPrompt(retestPrompt(r))}
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-surface-active-alt py-1 text-xs font-semibold text-text-primary transition-colors hover:bg-surface-hover disabled:opacity-50"
                   title="Re-run this backtest on the latest data"
                 >
                   <Play className="h-3.5 w-3.5" /> Re-test
                 </button>
+                {c?.conversationId && (
+                  <button
+                    disabled={busy}
+                    onClick={() => navigate(`/c/${c.conversationId}`)}
+                    className="flex items-center justify-center gap-1 rounded-md border border-border-light px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover disabled:opacity-50"
+                    title="Open the chat this backtest came from"
+                    aria-label="Open original chat"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                  </button>
+                )}
                 <button
                   disabled={busy}
-                  onClick={() => remove(s.id, s.name)}
+                  onClick={() => remove(r.id, r.name)}
                   className="flex items-center justify-center gap-1 rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-medium text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-50"
                   title="Delete strategy"
                   aria-label="Delete strategy"
