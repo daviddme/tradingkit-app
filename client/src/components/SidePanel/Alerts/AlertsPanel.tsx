@@ -82,6 +82,7 @@ export default function AlertsPanel() {
           ...(body ? { 'Content-Type': 'application/json' } : {}),
         },
         credentials: 'include',
+        cache: 'no-store',
         body: body ? JSON.stringify(body) : undefined,
       });
       const data = await res.json().catch(() => null);
@@ -117,13 +118,17 @@ export default function AlertsPanel() {
     load();
   }, [load]);
 
-  // Reload when an alert tool completes in chat (panel already open case).
+  // Reload whenever an alert tool completes in chat. Fires for both the
+  // just-opened and the already-open panel. A short follow-up reload guards
+  // against any brief lag between the tool returning and the list reflecting it.
   const { refresh } = useAtomValue(alertsSignalAtom);
   const lastRefresh = useRef(0);
   useEffect(() => {
     if (refresh > lastRefresh.current) {
       lastRefresh.current = refresh;
       load();
+      const t = setTimeout(() => load(), 1200);
+      return () => clearTimeout(t);
     }
   }, [refresh, load]);
 
