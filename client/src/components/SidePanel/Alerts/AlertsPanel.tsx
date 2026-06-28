@@ -70,6 +70,7 @@ export default function AlertsPanel() {
   const [quota, setQuota] = useState<Quota | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const api = useCallback(
@@ -92,9 +93,12 @@ export default function AlertsPanel() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setPending(false);
     try {
       const [list, q] = await Promise.all([api('GET', '/'), api('GET', '/quota')]);
-      if (list.ok && Array.isArray(list.data)) {
+      if (list.status === 409) {
+        setPending(true);
+      } else if (list.ok && Array.isArray(list.data)) {
         setAlerts(list.data as Alert[]);
       } else {
         setError('Could not load alerts.');
@@ -164,7 +168,12 @@ export default function AlertsPanel() {
 
       {loading && <div className="px-1 py-2 text-sm text-text-secondary">Loading…</div>}
       {error && !loading && <div className="px-1 py-2 text-sm text-red-500">{error}</div>}
-      {!loading && !error && alerts.length === 0 && (
+      {pending && !loading && (
+        <div className="px-1 py-2 text-sm text-text-secondary">
+          Your Trader.dev account is still being set up. Refresh in a moment.
+        </div>
+      )}
+      {!loading && !error && !pending && alerts.length === 0 && (
         <div className="px-1 py-2 text-sm text-text-secondary">
           No alerts yet. Create one to get notified the moment a strategy fires.
         </div>
