@@ -9,6 +9,7 @@ import {
   ScrollText,
   ArrowRightToLine,
   SlidersHorizontal,
+  CandlestickChart,
 } from 'lucide-react';
 import {
   Permissions,
@@ -34,6 +35,7 @@ import Parameters from '~/components/SidePanel/Parameters/Panel';
 import { MemoryPanel } from '~/components/SidePanel/Memories';
 import FilesPanel from '~/components/SidePanel/Files/Panel';
 import AlertsPanel from '~/components/SidePanel/Alerts/AlertsPanel';
+import StrategiesPanel from '~/components/SidePanel/Strategies/StrategiesPanel';
 import { PromptsAccordion } from '~/components/Prompts';
 import { SkillsAccordion } from '~/components/Skills';
 
@@ -178,6 +180,15 @@ export default function useSideNavLinks({
       icon: AttachmentIcon,
       id: 'files',
       Component: FilesPanel,
+    });
+
+    // TradingKit: backtested-strategies panel (available to all users).
+    links.push({
+      title: 'com_ui_my_strategies',
+      label: '',
+      icon: CandlestickChart,
+      id: 'strategies',
+      Component: StrategiesPanel,
     });
 
     // TradingKit: live alerts management panel (available to all users).

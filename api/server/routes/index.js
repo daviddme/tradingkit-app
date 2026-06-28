@@ -38,12 +38,14 @@ const mcp = require('./mcp');
 const rum = require('./rum');
 const clerk = require('./clerk');
 const alerts = require('./alerts');
+const strategies = require('./strategies');
 
 module.exports = {
   rum,
   mcp,
   clerk,
   alerts,
+  strategies,
   auth,
   adminAuth,
   adminConfig,

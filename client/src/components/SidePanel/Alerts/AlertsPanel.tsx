@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSetAtom, useAtomValue } from 'jotai';
 import { Plus, RefreshCw } from 'lucide-react';
 import { useAuthContext } from '~/hooks/AuthContext';
-import { alertsPanelAtom, alertsSignalAtom } from '~/store/alertsPanel';
+import { alertsSignalAtom } from '~/store/alertsPanel';
+import { pendingChatPromptAtom } from '~/store/chatPrompt';
 import { cn } from '~/utils';
 
 type Channel = { type?: string };
@@ -64,7 +65,7 @@ function relativeTime(ms: string | null): string {
 
 export default function AlertsPanel() {
   const { token } = useAuthContext();
-  const setPanel = useSetAtom(alertsPanelAtom);
+  const setChatPrompt = useSetAtom(pendingChatPromptAtom);
 
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [quota, setQuota] = useState<Quota | null>(null);
@@ -175,7 +176,7 @@ export default function AlertsPanel() {
       </div>
 
       <button
-        onClick={() => setPanel({ pendingPrompt: NEW_ALERT_PROMPT })}
+        onClick={() => setChatPrompt(NEW_ALERT_PROMPT)}
         className="flex items-center justify-center gap-1.5 rounded-lg border border-border-light bg-surface-active-alt py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface-hover"
       >
         <Plus className="h-4 w-4" /> New alert
