@@ -13,6 +13,7 @@ import AgentMarketplace from '~/components/Agents/Marketplace';
 import { OAuthSuccess, OAuthError } from '~/components/OAuth';
 import { AuthContextProvider } from '~/hooks/AuthContext';
 import WithRum from '~/lib/rum/WithRum';
+import { TermsPage, PrivacyPage } from '~/components/Legal/LegalPage';
 import RouteErrorBoundary from './RouteErrorBoundary';
 import StartupLayout from './Layouts/Startup';
 import LoginLayout from './Layouts/Login';
@@ -97,6 +98,16 @@ export const router = createBrowserRouter(
     {
       path: 'verify',
       element: <VerifyEmail />,
+      errorElement: <RouteErrorBoundary />,
+    },
+    {
+      path: 'terms',
+      element: <TermsPage />,
+      errorElement: <RouteErrorBoundary />,
+    },
+    {
+      path: 'privacy',
+      element: <PrivacyPage />,
       errorElement: <RouteErrorBoundary />,
     },
     {

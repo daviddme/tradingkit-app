@@ -234,6 +234,19 @@ export default function Landing({ centerFormOnLanding }: { centerFormOnLanding: 
               {description}
             </div>
           ))}
+        <div className="animate-fadeIn mx-auto mt-6 max-w-md text-balance px-4 text-center text-xs leading-relaxed text-text-secondary">
+          TradingKit is for research and education. Backtests are hypothetical and not financial
+          advice; you trade at your own risk and we take no responsibility for any trades you make.
+          By using TradingKit you agree to our{' '}
+          <a href="/terms" className="underline hover:text-text-primary">
+            Terms
+          </a>{' '}
+          and{' '}
+          <a href="/privacy" className="underline hover:text-text-primary">
+            Privacy Policy
+          </a>
+          .
+        </div>
       </div>
     </div>
   );

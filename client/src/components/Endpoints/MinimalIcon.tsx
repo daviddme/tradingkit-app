@@ -1,4 +1,4 @@
-import { Feather } from 'lucide-react';
+import TradingKitIcon from '~/components/svg/TradingKitIcon';
 import { EModelEndpoint, alternateName } from 'librechat-data-provider';
 import {
   Sparkles,
@@ -43,7 +43,7 @@ const MinimalIcon: React.FC<IconProps> = (props) => {
     [EModelEndpoint.assistants]: { icon: <Sparkles className="icon-sm" />, name: 'Assistant' },
     [EModelEndpoint.azureAssistants]: { icon: <Sparkles className="icon-sm" />, name: 'Assistant' },
     [EModelEndpoint.agents]: {
-      icon: <Feather className="icon-sm" aria-hidden="true" />,
+      icon: <TradingKitIcon className="icon-sm" />,
       name: props.modelLabel ?? alternateName[EModelEndpoint.agents],
     },
     [EModelEndpoint.bedrock]: {

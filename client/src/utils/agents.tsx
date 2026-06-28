@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Feather } from 'lucide-react';
+import TradingKitIcon from '~/components/svg/TradingKitIcon';
 import { Skeleton } from '@librechat/client';
 import type t from 'librechat-data-provider';
 
@@ -116,7 +116,7 @@ export const renderAgentAvatar = (
 
   return (
     <div className={`relative flex items-center justify-center ${sizeClasses[size]} ${className}`}>
-      <Feather className={`text-text-primary ${iconSizeClasses[size]}`} strokeWidth={1.5} />
+      <TradingKitIcon className={`text-text-primary ${iconSizeClasses[size]}`} />
     </div>
   );
 };
