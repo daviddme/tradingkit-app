@@ -41,6 +41,12 @@ const balanceSchema: Schema<t.IBalance> = new Schema<t.IBalance>({
     type: String,
     index: true,
   },
+  // TradingKit: the Clerk Billing plan slug this balance was last granted for
+  // (free | pro | pro_plus). Used to grant the monthly allotment once per plan
+  // change rather than on every login.
+  clerkPlan: {
+    type: String,
+  },
 });
 
 export default balanceSchema;

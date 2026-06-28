@@ -11,6 +11,8 @@ export interface IBalance extends Document {
   lastRefill: Date;
   refillAmount: number;
   tenantId?: string;
+  /** TradingKit: Clerk Billing plan slug this balance was last granted for. */
+  clerkPlan?: string;
 }
 
 /** Plain data fields for creating or updating a balance record (no Mongoose Document methods) */
@@ -22,4 +24,6 @@ export interface IBalanceUpdate {
   refillIntervalUnit?: RefillIntervalUnit;
   refillAmount?: number;
   lastRefill?: Date;
+  /** TradingKit: Clerk Billing plan slug marker. */
+  clerkPlan?: string;
 }

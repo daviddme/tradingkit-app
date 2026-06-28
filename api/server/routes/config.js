@@ -103,6 +103,13 @@ function buildPreLoginPayload() {
     payload.ldap = ldap;
   }
 
+  // TradingKit: when a Clerk publishable key is configured, expose it so the
+  // client can bootstrap ClerkProvider at runtime. Absent (e.g. prod until
+  // validated) => the app falls back to native LibreChat auth.
+  if (process.env.CLERK_PUBLISHABLE_KEY) {
+    payload.clerkPublishableKey = process.env.CLERK_PUBLISHABLE_KEY;
+  }
+
   return payload;
 }
 

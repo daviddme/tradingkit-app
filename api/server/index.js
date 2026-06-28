@@ -174,6 +174,10 @@ const startServer = async () => {
   /* Middleware */
   app.use(metricsMiddleware);
   app.use(noIndex);
+  /* Clerk billing webhook needs the unparsed body for Svix signature
+   * verification, so capture it as a raw Buffer before the global JSON parser
+   * consumes the request stream. */
+  app.use('/api/clerk/webhook', express.raw({ type: '*/*' }));
   app.use(express.json({ limit: '3mb' }));
   app.use(express.urlencoded({ extended: true, limit: '3mb' }));
   app.use(handleJsonParseError);
@@ -236,6 +240,7 @@ const startServer = async () => {
   app.use('/oauth', preAuthTenantMiddleware, routes.oauth);
   /* API Endpoints */
   app.use('/api/auth', preAuthTenantMiddleware, routes.auth);
+  app.use('/api/clerk', preAuthTenantMiddleware, routes.clerk);
   app.use('/api/admin', routes.adminAuth);
   app.use('/api/admin/config', routes.adminConfig);
   app.use('/api/admin/grants', routes.adminGrants);

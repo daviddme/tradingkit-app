@@ -36,10 +36,12 @@ const keys = require('./keys');
 const user = require('./user');
 const mcp = require('./mcp');
 const rum = require('./rum');
+const clerk = require('./clerk');
 
 module.exports = {
   rum,
   mcp,
+  clerk,
   auth,
   adminAuth,
   adminConfig,
