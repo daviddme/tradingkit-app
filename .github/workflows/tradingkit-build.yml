@@ -1,0 +1,54 @@
+name: TradingKit build → GHCR
+
+# Builds our LibreChat fork into a container image and pushes it to GitHub
+# Container Registry, so a Railway staging service can run it (image source).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'api/**'
+      - 'packages/**'
+      - 'Dockerfile'
+      - '.github/workflows/tradingkit-build.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: tradingkit-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android || true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/daviddme/tradingkit-app:latest
+            ghcr.io/daviddme/tradingkit-app:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
