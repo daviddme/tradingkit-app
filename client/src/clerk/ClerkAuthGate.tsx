@@ -6,10 +6,16 @@ import {
   SignedOut,
   SignIn,
   useAuth,
+  useClerk,
 } from '@clerk/clerk-react';
 import ClerkAccountBar from './ClerkAccountBar';
 
-type StartupCfg = { clerkPublishableKey?: string | null } | null;
+type StartupCfg = {
+  clerkPublishableKey?: string | null;
+  clerkIsSatellite?: boolean | null;
+  clerkDomain?: string | null;
+  clerkSignInUrl?: string | null;
+} | null;
 
 const CONFIG_ENDPOINT = '/api/config';
 const SESSION_ENDPOINT = '/api/clerk/session';
@@ -123,6 +129,34 @@ const primaryButton: CSSProperties = {
 };
 
 /**
+ * Satellite sign-in screen. TradingKit runs on Trader.dev's shared Clerk
+ * instance, so chat.tradingkit.com is a satellite domain and credentials are
+ * entered on the Trader.dev primary. We show a branded screen and hand off to
+ * the primary sign-in; Clerk syncs the session back to this domain on return.
+ */
+function SatelliteSignIn() {
+  const { redirectToSignIn } = useClerk();
+  return (
+    <Shell>
+      <div style={{ textAlign: 'center' }}>
+        <h1 style={{ color: '#e6e8f0', fontSize: 28, fontWeight: 700, marginBottom: 6 }}>
+          TradingKit
+        </h1>
+        <p style={{ color: '#9aa3b2', marginBottom: 24 }}>
+          Backtest trading strategies in plain English.
+        </p>
+        <button
+          onClick={() => redirectToSignIn({ redirectUrl: window.location.href })}
+          style={primaryButton}
+        >
+          Continue with Trader.dev
+        </button>
+      </div>
+    </Shell>
+  );
+}
+
+/**
  * Top-level auth gate. Reads the runtime startup config; if a Clerk publishable
  * key is present, the whole app is gated behind Clerk (sign-in screen, then the
  * session bridge). If absent (e.g. production until validated), it transparently
@@ -156,23 +190,38 @@ export default function ClerkAuthGate({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
+  // Satellite mode (Trader.dev's shared instance): authentication redirects to
+  // the Trader.dev primary. Single-instance mode renders sign-in inline.
+  const satellite = !!cfg?.clerkIsSatellite;
+  const satelliteProps = satellite
+    ? {
+        isSatellite: true,
+        domain: cfg?.clerkDomain || undefined,
+        signInUrl: cfg?.clerkSignInUrl || undefined,
+      }
+    : {};
+
   return (
-    <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/">
+    <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/" {...satelliteProps}>
       <SessionSync />
       <SignedOut>
-        <Shell>
-          <div style={{ textAlign: 'center' }}>
-            <h1 style={{ color: '#e6e8f0', fontSize: 28, fontWeight: 700, marginBottom: 6 }}>
-              TradingKit
-            </h1>
-            <p style={{ color: '#9aa3b2', marginBottom: 24 }}>
-              Backtest trading strategies in plain English.
-            </p>
-            <div style={{ display: 'inline-block' }}>
-              <SignIn routing="hash" />
+        {satellite ? (
+          <SatelliteSignIn />
+        ) : (
+          <Shell>
+            <div style={{ textAlign: 'center' }}>
+              <h1 style={{ color: '#e6e8f0', fontSize: 28, fontWeight: 700, marginBottom: 6 }}>
+                TradingKit
+              </h1>
+              <p style={{ color: '#9aa3b2', marginBottom: 24 }}>
+                Backtest trading strategies in plain English.
+              </p>
+              <div style={{ display: 'inline-block' }}>
+                <SignIn routing="hash" />
+              </div>
             </div>
-          </div>
-        </Shell>
+          </Shell>
+        )}
       </SignedOut>
       <SignedIn>
         <ClerkBridge>{children}</ClerkBridge>

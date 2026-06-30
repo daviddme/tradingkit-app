@@ -108,6 +108,18 @@ function buildPreLoginPayload() {
   // validated) => the app falls back to native LibreChat auth.
   if (process.env.CLERK_PUBLISHABLE_KEY) {
     payload.clerkPublishableKey = process.env.CLERK_PUBLISHABLE_KEY;
+    // Satellite mode: TradingKit runs on Trader.dev's shared Clerk instance, so
+    // chat.tradingkit.com is a satellite domain and sign-in lives on the Trader.dev
+    // primary. When unset, the client uses the standard single-instance flow.
+    if (process.env.CLERK_IS_SATELLITE === 'true') {
+      payload.clerkIsSatellite = true;
+      if (process.env.CLERK_DOMAIN) {
+        payload.clerkDomain = process.env.CLERK_DOMAIN;
+      }
+      if (process.env.CLERK_SIGN_IN_URL) {
+        payload.clerkSignInUrl = process.env.CLERK_SIGN_IN_URL;
+      }
+    }
   }
 
   return payload;
