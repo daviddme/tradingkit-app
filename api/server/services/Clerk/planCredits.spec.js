@@ -1,6 +1,7 @@
 const {
   DEFAULT_PLAN,
   PLAN_CREDITS,
+  TRADERDEV_TIER_CREDITS,
   normalizePlan,
   planFromClaim,
   resolveCreditsForPlan,
@@ -9,18 +10,24 @@ const {
 
 describe('planCredits', () => {
   describe('resolveCreditsForTier (Trader.dev tiers)', () => {
-    test('maps known Trader.dev tiers', () => {
-      expect(resolveCreditsForTier('free')).toBe(50000);
-      expect(resolveCreditsForTier('starter')).toBe(1000000);
-      expect(resolveCreditsForTier('pro')).toBe(5000000);
-      expect(resolveCreditsForTier('og')).toBe(50000000);
+    test('maps known Trader.dev tiers to the configured rail', () => {
+      expect(resolveCreditsForTier('free')).toBe(TRADERDEV_TIER_CREDITS.free);
+      expect(resolveCreditsForTier('starter')).toBe(TRADERDEV_TIER_CREDITS.starter);
+      expect(resolveCreditsForTier('pro')).toBe(TRADERDEV_TIER_CREDITS.pro);
+      expect(resolveCreditsForTier('og')).toBe(TRADERDEV_TIER_CREDITS.og);
     });
 
     test('handles casing/whitespace and falls back to free', () => {
-      expect(resolveCreditsForTier('  PRO ')).toBe(5000000);
-      expect(resolveCreditsForTier('unknown')).toBe(50000);
-      expect(resolveCreditsForTier(undefined)).toBe(50000);
-      expect(resolveCreditsForTier(null)).toBe(50000);
+      expect(resolveCreditsForTier('  PRO ')).toBe(TRADERDEV_TIER_CREDITS.pro);
+      expect(resolveCreditsForTier('unknown')).toBe(TRADERDEV_TIER_CREDITS.free);
+      expect(resolveCreditsForTier(undefined)).toBe(TRADERDEV_TIER_CREDITS.free);
+      expect(resolveCreditsForTier(null)).toBe(TRADERDEV_TIER_CREDITS.free);
+    });
+
+    test('every tier rail is generous (>= $1) so chat never blocks confusingly', () => {
+      for (const key of Object.keys(TRADERDEV_TIER_CREDITS)) {
+        expect(TRADERDEV_TIER_CREDITS[key]).toBeGreaterThanOrEqual(1000000);
+      }
     });
   });
 

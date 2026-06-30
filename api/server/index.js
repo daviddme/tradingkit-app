@@ -243,6 +243,7 @@ const startServer = async () => {
   app.use('/api/clerk', preAuthTenantMiddleware, routes.clerk);
   app.use('/api/tk-alerts', routes.alerts);
   app.use('/api/tk-strategies', routes.strategies);
+  app.use('/api/tk-credits', routes.credits);
   app.use('/api/admin', routes.adminAuth);
   app.use('/api/admin/config', routes.adminConfig);
   app.use('/api/admin/grants', routes.adminGrants);

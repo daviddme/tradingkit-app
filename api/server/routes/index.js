@@ -39,6 +39,7 @@ const rum = require('./rum');
 const clerk = require('./clerk');
 const alerts = require('./alerts');
 const strategies = require('./strategies');
+const credits = require('./credits');
 
 module.exports = {
   rum,
@@ -46,6 +47,7 @@ module.exports = {
   clerk,
   alerts,
   strategies,
+  credits,
   auth,
   adminAuth,
   adminConfig,

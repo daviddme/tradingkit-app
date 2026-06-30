@@ -60,17 +60,19 @@ function resolveCreditsForPlan(planKeyOrSlug) {
 }
 
 /**
- * Monthly TradingKit credit grant keyed on the member's TRADER.DEV tier (the
- * decided model: "Trader.dev plan governs access"). Tiers come from the
- * provisioning API (free | starter | pro), plus `og` for unlimited-credits
- * members. Tune freely. `og` is a very large grant so OG members are effectively
- * unmetered without being formal admins.
+ * Per-tier LLM-CHAT rail (tokenCredits, 1000 = $0.001). Since credits were
+ * unified, the member's *visible* balance is their live Trader.dev balance
+ * (what backtests spend); this rail is the invisible backstop that meters only
+ * the chat LLM tokens. It must be generous enough never to block in normal use
+ * (a confusing "insufficient balance" while the shown Trader.dev credits look
+ * fine), while still capping runaway abuse. Tune freely.
+ *   free 2M=$2 / starter 10M=$10 / pro 50M=$50 / og 1B≈unmetered.
  */
 const TRADERDEV_TIER_CREDITS = {
-  free: 50000,
-  starter: 1000000,
-  pro: 5000000,
-  og: 50000000,
+  free: 2000000,
+  starter: 10000000,
+  pro: 50000000,
+  og: 1000000000,
 };
 
 /** Credit grant for a Trader.dev tier; `tier` already normalized by the caller. */
