@@ -119,6 +119,9 @@ function buildPreLoginPayload() {
       if (process.env.CLERK_SIGN_IN_URL) {
         payload.clerkSignInUrl = process.env.CLERK_SIGN_IN_URL;
       }
+      if (process.env.CLERK_SIGN_UP_URL) {
+        payload.clerkSignUpUrl = process.env.CLERK_SIGN_UP_URL;
+      }
     }
   }
 

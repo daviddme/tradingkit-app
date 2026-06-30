@@ -15,6 +15,7 @@ type StartupCfg = {
   clerkIsSatellite?: boolean | null;
   clerkDomain?: string | null;
   clerkSignInUrl?: string | null;
+  clerkSignUpUrl?: string | null;
 } | null;
 
 const CONFIG_ENDPOINT = '/api/config';
@@ -198,6 +199,7 @@ export default function ClerkAuthGate({ children }: { children: ReactNode }) {
         isSatellite: true,
         domain: cfg?.clerkDomain || undefined,
         signInUrl: cfg?.clerkSignInUrl || undefined,
+        signUpUrl: cfg?.clerkSignUpUrl || undefined,
       }
     : {};
 
