@@ -1,12 +1,6 @@
 const { logger } = require('@librechat/data-schemas');
 const { SystemRoles } = require('librechat-data-provider');
-const {
-  findUser,
-  createUser,
-  updateUser,
-  findBalanceByUser,
-  upsertBalanceFields,
-} = require('~/models');
+const { findUser, createUser, updateUser } = require('~/models');
 const { setAuthTokens } = require('~/server/services/AuthService');
 const {
   isClerkEnabled,
@@ -14,8 +8,10 @@ const {
   getClerkUser,
   primaryEmail,
 } = require('~/server/services/Clerk/clerkClient');
-const { planFromClaim, resolveCreditsForPlan } = require('~/server/services/Clerk/planCredits');
-const { ensureTraderDevKey } = require('~/server/services/Clerk/traderdevProvision');
+const {
+  ensureTraderDevKey,
+  syncTierCredits,
+} = require('~/server/services/Clerk/traderdevProvision');
 
 const ADMIN_EMAIL = 'hi@davidd.tech';
 
@@ -29,31 +25,6 @@ function extractToken(req) {
     return auth.slice(7);
   }
   return null;
-}
-
-/**
- * Grant a user their plan's monthly credits, but only when needed: on first
- * sign-in (no balance record) or when the plan changed since the last grant.
- * The plan's amount is also wired into LibreChat's native auto-refill so the
- * balance tops back up to the plan allotment each interval. Admins are skipped
- * (they're exempt from metering entirely).
- */
-async function syncPlanCredits(userId, plan) {
-  const existing = await findBalanceByUser(userId);
-  if (existing && existing.clerkPlan === plan) {
-    return;
-  }
-  const credits = resolveCreditsForPlan(plan);
-  await upsertBalanceFields(userId, {
-    tokenCredits: credits,
-    clerkPlan: plan,
-    autoRefillEnabled: true,
-    refillAmount: credits,
-    refillIntervalValue: 30,
-    refillIntervalUnit: 'days',
-    lastRefill: new Date(),
-  });
-  logger.info(`[clerk] granted ${credits} credits to user ${userId} for plan "${plan}"`);
 }
 
 /**
@@ -83,7 +54,6 @@ async function clerkAuthController(req, res) {
   }
 
   const clerkUserId = claims.sub;
-  const plan = planFromClaim(claims.pla);
 
   let clerkUser;
   try {
@@ -136,21 +106,22 @@ async function clerkAuthController(req, res) {
 
     const userId = user._id.toString();
 
-    // Non-admins get their plan's monthly credits; admins are metering-exempt.
-    if (user.role !== SystemRoles.ADMIN && email !== ADMIN_EMAIL) {
-      try {
-        await syncPlanCredits(userId, plan);
-      } catch (err) {
-        logger.error('[clerk] failed to sync plan credits:', err);
-      }
-    }
-
-    // Auto-provision a personal Trader.dev account + MCP key so the user's
-    // backtests run as themselves (best-effort; never blocks login).
+    // Auto-provision the user's personal Trader.dev account + MCP key first, so
+    // their account exists before we read its tier (best-effort; never blocks).
     try {
       await ensureTraderDevKey(userId, email, name);
     } catch (err) {
       logger.error('[clerk] Trader.dev provisioning failed:', err);
+    }
+
+    // Credits follow the member's Trader.dev tier ("Trader.dev plan governs
+    // access"). Admins are metering-exempt, so skip them.
+    if (user.role !== SystemRoles.ADMIN && email !== ADMIN_EMAIL) {
+      try {
+        await syncTierCredits(userId, email);
+      } catch (err) {
+        logger.error('[clerk] failed to sync tier credits:', err);
+      }
     }
 
     const lcToken = await setAuthTokens(userId, res, null, req);

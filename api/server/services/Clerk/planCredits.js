@@ -59,10 +59,34 @@ function resolveCreditsForPlan(planKeyOrSlug) {
   return PLAN_CREDITS[key] != null ? PLAN_CREDITS[key] : PLAN_CREDITS[DEFAULT_PLAN];
 }
 
+/**
+ * Monthly TradingKit credit grant keyed on the member's TRADER.DEV tier (the
+ * decided model: "Trader.dev plan governs access"). Tiers come from the
+ * provisioning API (free | starter | pro), plus `og` for unlimited-credits
+ * members. Tune freely. `og` is a very large grant so OG members are effectively
+ * unmetered without being formal admins.
+ */
+const TRADERDEV_TIER_CREDITS = {
+  free: 50000,
+  starter: 1000000,
+  pro: 5000000,
+  og: 50000000,
+};
+
+/** Credit grant for a Trader.dev tier; `tier` already normalized by the caller. */
+function resolveCreditsForTier(tier) {
+  const key = typeof tier === 'string' ? tier.trim().toLowerCase() : 'free';
+  return TRADERDEV_TIER_CREDITS[key] != null
+    ? TRADERDEV_TIER_CREDITS[key]
+    : TRADERDEV_TIER_CREDITS.free;
+}
+
 module.exports = {
   DEFAULT_PLAN,
   PLAN_CREDITS,
+  TRADERDEV_TIER_CREDITS,
   normalizePlan,
   planFromClaim,
   resolveCreditsForPlan,
+  resolveCreditsForTier,
 };

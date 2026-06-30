@@ -3,6 +3,8 @@ const {
   updateUserPluginAuth,
   getUserPluginAuthValue,
 } = require('~/server/services/PluginService');
+const { findBalanceByUser, upsertBalanceFields } = require('~/models');
+const { resolveCreditsForTier } = require('~/server/services/Clerk/planCredits');
 
 const PROVISION_BASE = process.env.TRADERDEV_PROVISION_URL || 'https://mcp-api.trader.dev';
 const ADMIN_EMAIL = 'hi@davidd.tech';
@@ -92,4 +94,60 @@ async function ensureTraderDevKey(userId, email, displayName) {
   return { provisioned: true, reason: data.created ? 'created' : 'rotated', tier: data.tier };
 }
 
-module.exports = { ensureTraderDevKey, MCP_PLUGIN_KEY, MCP_AUTH_FIELD };
+/** Read the member's current Trader.dev tier (read-only; never throws). */
+async function getTraderdevTier(email) {
+  if (!adminKey()) {
+    return { exists: false, tier: 'free', unlimited: false };
+  }
+  try {
+    const res = await fetch(
+      `${PROVISION_BASE}/provision/user?email=${encodeURIComponent(email)}`,
+      { headers: { Authorization: `Bearer ${adminKey()}` } },
+    );
+    const data = await res.json().catch(() => ({}));
+    return {
+      exists: !!data.exists,
+      tier: typeof data.tier === 'string' ? data.tier : 'free',
+      unlimited: !!data.unlimitedCredits,
+    };
+  } catch (err) {
+    logger.warn(`[traderdev] tier lookup failed for ${email}: ${err?.message}`);
+    return { exists: false, tier: 'free', unlimited: false };
+  }
+}
+
+/**
+ * Sync the user's TradingKit monthly credits to their current Trader.dev tier
+ * ("Trader.dev plan governs access"). Only re-grants when the tier changed since
+ * the last sync (tracked via the balance `clerkPlan` field), so a normal login
+ * never resets spent credits; the 30-day auto-refill tops them back up. The owner
+ * account is metering-exempt anyway, so callers skip it. Best-effort.
+ */
+async function syncTierCredits(userId, email) {
+  const { tier, unlimited } = await getTraderdevTier(email);
+  const tierKey = unlimited ? 'og' : (tier || 'free').trim().toLowerCase();
+  const credits = resolveCreditsForTier(tierKey);
+  const existing = await findBalanceByUser(userId);
+  if (existing && existing.clerkPlan === tierKey) {
+    return { tier: tierKey, changed: false };
+  }
+  await upsertBalanceFields(userId, {
+    tokenCredits: credits,
+    clerkPlan: tierKey,
+    autoRefillEnabled: true,
+    refillAmount: credits,
+    refillIntervalValue: 30,
+    refillIntervalUnit: 'days',
+    lastRefill: new Date(),
+  });
+  logger.info(`[traderdev] synced ${credits} credits for ${email} (tier=${tierKey})`);
+  return { tier: tierKey, changed: true };
+}
+
+module.exports = {
+  ensureTraderDevKey,
+  getTraderdevTier,
+  syncTierCredits,
+  MCP_PLUGIN_KEY,
+  MCP_AUTH_FIELD,
+};

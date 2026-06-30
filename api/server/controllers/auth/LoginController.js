@@ -1,7 +1,12 @@
 const { logger } = require('@librechat/data-schemas');
 const { generate2FATempToken } = require('~/server/services/twoFactorService');
 const { setAuthTokens } = require('~/server/services/AuthService');
-const { ensureTraderDevKey } = require('~/server/services/Clerk/traderdevProvision');
+const {
+  ensureTraderDevKey,
+  syncTierCredits,
+} = require('~/server/services/Clerk/traderdevProvision');
+
+const ADMIN_EMAIL = 'hi@davidd.tech';
 
 const loginController = async (req, res) => {
   try {
@@ -24,6 +29,15 @@ const loginController = async (req, res) => {
       await ensureTraderDevKey(user.id, req.user.email, req.user.name);
     } catch (err) {
       logger.error('[loginController] Trader.dev provisioning failed:', err);
+    }
+
+    // Credits follow the member's Trader.dev tier; admins are metering-exempt.
+    if (req.user.role !== 'ADMIN' && req.user.email !== ADMIN_EMAIL) {
+      try {
+        await syncTierCredits(user.id, req.user.email);
+      } catch (err) {
+        logger.error('[loginController] tier credit sync failed:', err);
+      }
     }
 
     const token = await setAuthTokens(req.user._id, res, null, req);

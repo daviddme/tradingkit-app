@@ -4,9 +4,26 @@ const {
   normalizePlan,
   planFromClaim,
   resolveCreditsForPlan,
+  resolveCreditsForTier,
 } = require('./planCredits');
 
 describe('planCredits', () => {
+  describe('resolveCreditsForTier (Trader.dev tiers)', () => {
+    test('maps known Trader.dev tiers', () => {
+      expect(resolveCreditsForTier('free')).toBe(50000);
+      expect(resolveCreditsForTier('starter')).toBe(1000000);
+      expect(resolveCreditsForTier('pro')).toBe(5000000);
+      expect(resolveCreditsForTier('og')).toBe(50000000);
+    });
+
+    test('handles casing/whitespace and falls back to free', () => {
+      expect(resolveCreditsForTier('  PRO ')).toBe(5000000);
+      expect(resolveCreditsForTier('unknown')).toBe(50000);
+      expect(resolveCreditsForTier(undefined)).toBe(50000);
+      expect(resolveCreditsForTier(null)).toBe(50000);
+    });
+  });
+
   describe('normalizePlan', () => {
     test('passes through known slugs', () => {
       expect(normalizePlan('free')).toBe('free');
